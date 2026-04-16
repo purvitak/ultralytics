@@ -72,6 +72,12 @@ from ultralytics.nn.modules import (
     YOLOESegment,
     YOLOESegment26,
     v10Detect,
+    # ========== CUSTOM MODULE ADDITIONS ==========
+    RGC2f,
+    RGBottleneck,
+    CustomCBAM,
+    BiFPN_Add,
+    # =============================================
 )
 from ultralytics.utils import DEFAULT_CFG_DICT, LOGGER, WINDOWS, YAML, colorstr, emojis
 from ultralytics.utils.checks import check_requirements, check_suffix, check_yaml
@@ -1608,6 +1614,9 @@ def parse_model(d, ch, verbose=True):
             SCDown,
             C2fCIB,
             A2C2f,
+            # ========== CUSTOM MODULE ADDITIONS ==========
+            RGC2f,
+            # =============================================
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1627,6 +1636,9 @@ def parse_model(d, ch, verbose=True):
             C2fCIB,
             C2PSA,
             A2C2f,
+            # ========== CUSTOM MODULE ADDITIONS ==========
+            RGC2f,
+            # =============================================
         }
     )
     for i, (f, n, m, args) in enumerate(d["backbone"] + d["head"]):  # from, number, module, args
@@ -1678,6 +1690,14 @@ def parse_model(d, ch, verbose=True):
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
+        # ========== CUSTOM MODULE ADDITIONS ==========
+        elif m is BiFPN_Add:
+            # BiFPN_Add expects (c1, c2) but c1 is not used for channel computation; we set c2 from args[1]
+            c2 = args[1]  # output channels
+        elif m is CustomCBAM:
+            c2 = ch[f]  # no channel change
+            args = [c2] + args  # prepend input channels
+        # =============================================
         elif m in frozenset(
             {
                 Detect,
@@ -1836,4 +1856,4 @@ def guess_model_task(model):
         "Unable to automatically guess model task, assuming 'task=detect'. "
         "Explicitly define task for your model, i.e. 'task=detect', 'segment', 'classify','pose' or 'obb'."
     )
-    return "detect"  # assume detect
+    return "detect"  # assume detect;

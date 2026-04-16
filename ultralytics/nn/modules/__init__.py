@@ -106,6 +106,12 @@ from .transformer import (
     TransformerLayer,
 )
 
+# ========== CUSTOM MODULES (research additions) ==========
+from .rgc2f import RGC2f, RGBottleneck
+from .cbam import CustomCBAM      # renamed to avoid conflict with built‑in CBAM
+from .bifpn import BiFPN_Add
+# =========================================================
+
 __all__ = (
     "AIFI",
     "C1",
@@ -187,4 +193,9 @@ __all__ = (
     "YOLOESegment",
     "YOLOESegment26",
     "v10Detect",
+    # Custom exports
+    "RGC2f",
+    "RGBottleneck",
+    "CustomCBAM",
+    "BiFPN_Add",
 )
