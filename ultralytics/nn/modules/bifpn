@@ -1,5 +1,3 @@
-%%writefile /kaggle/working/ultralytics/ultralytics/nn/modules/bifpn.py
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -15,15 +13,15 @@ class BiFPN_Add(nn.Module):
     """
     def __init__(self, c1, c2):
         super().__init__()
-        self.w    = nn.Parameter(torch.ones(2, dtype=torch.float32))
+        self.w = nn.Parameter(torch.ones(2, dtype=torch.float32))
         self.relu = nn.ReLU()
         self.conv = Conv(c1, c2, 1, 1)
-        self.eps  = 1e-4
+        self.eps = 1e-4
 
     def forward(self, x):
         # x is list of tensors from multiple layers
-        w   = self.relu(self.w)
-        w   = w / (w.sum() + self.eps)
+        w = self.relu(self.w)
+        w = w / (w.sum() + self.eps)
         # Resize all to first tensor's spatial size
         h, ww = x[0].shape[2:]
         out = sum(

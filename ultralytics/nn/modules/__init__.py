@@ -107,8 +107,9 @@ from .transformer import (
 )
 
 # ========== CUSTOM MODULES (research additions) ==========
+# Custom modules — research additions
 from .rgc2f import RGC2f, RGBottleneck
-from .cbam import CustomCBAM      # renamed to avoid conflict with built‑in CBAM
+from .cbam import CustomCBAM, CustomChannelAttention, CustomSpatialAttention
 from .bifpn import BiFPN_Add
 # =========================================================
 

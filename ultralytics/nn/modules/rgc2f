@@ -1,5 +1,3 @@
-%%writefile /kaggle/working/ultralytics/ultralytics/nn/modules/rgc2f.py
-
 import torch
 import torch.nn as nn
 from ultralytics.nn.modules.conv import Conv
