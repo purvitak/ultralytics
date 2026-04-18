@@ -1,34 +1,47 @@
+# =============================================================================
+# bifpn.py - Corrected BiFPN_Add module (no in-place operations on leaf variables)
+# =============================================================================
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from ultralytics.nn.modules.conv import Conv
-
+from ultralytics.nn.modules import Conv
 
 class BiFPN_Add(nn.Module):
     """
-    BiFPN weighted feature fusion node.
-    Receives list of feature maps from YAML multi-input syntax.
-    All inputs upsampled/downsampled to match first input spatial size.
-    Output channels = c2.
+    Bidirectional Feature Pyramid Network (BiFPN) weighted fusion module.
+    Combines two input feature maps with learnable fusion weights.
+    
+    Args:
+        c1: Input channels (same for both inputs)
+        c2: Output channels after fusion and optional convolution
     """
     def __init__(self, c1, c2):
         super().__init__()
+        # Learnable weight for two inputs (no in-place operations will be used)
         self.w = nn.Parameter(torch.ones(2, dtype=torch.float32))
-        self.relu = nn.ReLU()
-        self.conv = Conv(c1, c2, 1, 1)
-        self.eps = 1e-4
+        self.epsilon = 0.0001  # Small constant for numerical stability
+        # Optional 1x1 convolution to adjust channels if needed
+        self.conv = Conv(c1, c2, 1, 1) if c1 != c2 else nn.Identity()
 
     def forward(self, x):
-        # x is list of tensors from multiple layers
-        w = self.relu(self.w)
-        w = w / (w.sum() + self.eps)
-        # Resize all to first tensor's spatial size
-        h, ww = x[0].shape[2:]
-        out = sum(
-            w[i] * F.interpolate(
-                xi, size=(h, ww),
-                mode="bilinear", align_corners=False
-            )
-            for i, xi in enumerate(x[:2])
-        )
-        return self.conv(out)
+        """
+        Forward pass with weighted fusion of two input tensors.
+        
+        Args:
+            x: List or tuple of two tensors [x1, x2] to be fused
+            
+        Returns:
+            Fused tensor after weighted summation and optional convolution
+        """
+        # Apply ReLU non-linearity WITHOUT in-place operation
+        # Using torch.relu() instead of nn.ReLU() avoids in-place modification
+        w = torch.relu(self.w)
+        
+        # Normalize weights to sum to 1 (softmax-style without softmax)
+        weight = w / (torch.sum(w) + self.epsilon)
+        
+        # Weighted sum of the two input tensors
+        fused = weight[0] * x[0] + weight[1] * x[1]
+        
+        # Apply optional convolution and return
+        return self.conv(fused)
