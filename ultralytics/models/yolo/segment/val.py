@@ -146,43 +146,10 @@ class SegmentationValidator(DetectionValidator):
         super().gather_stats()  # gather stats from DetectionValidator
         self._gather_image_metrics(self.metrics.seg)
 
- def _process_batch(self, preds: dict[str, torch.Tensor], batch: dict[str, Any]) -> dict[str, np.ndarray]:
-        """Compute correct prediction matrix for a batch based on bounding boxes and optional masks.
-
-        Args:
-            preds (dict[str, torch.Tensor]): Dictionary containing predictions with keys like 'cls' and 'masks'.
-            batch (dict[str, Any]): Dictionary containing batch data with keys like 'cls' and 'masks'.
-
-        Returns:
-            (dict[str, np.ndarray]): A dictionary containing correct prediction matrices including 'tp_m' for mask IoU.
-
-        Examples:
-            >>> preds = {"cls": torch.tensor([1, 0]), "masks": torch.rand(2, 640, 640), "bboxes": torch.rand(2, 4)}
-            >>> batch = {"cls": torch.tensor([1, 0]), "masks": torch.rand(2, 640, 640), "bboxes": torch.rand(2, 4)}
-            >>> correct_preds = validator._process_batch(preds, batch)
-
-        Notes:
-            - This method computes IoU between predicted and ground truth masks.
-            - Overlapping masks are handled based on the overlap_mask argument setting.
-        """
+    def _process_batch(self, preds, batch):
         tp = super()._process_batch(preds, batch)
-        gt_cls = batch["cls"]
-        if gt_cls.shape[0] == 0 or preds["cls"].shape[0] == 0:
-            tp_m = np.zeros((preds["cls"].shape[0], self.niou), dtype=bool)
-        else:
-            # Resize predicted masks to match ground truth mask resolution if needed
-            gt_masks = batch["masks"]          # shape: [N, H_gt, W_gt]
-            pred_masks = preds["masks"]        # shape: [M, H_pred, W_pred]
-            if gt_masks.shape[2:] != pred_masks.shape[2:]:
-                pred_masks = F.interpolate(
-                    pred_masks.unsqueeze(1).float(),
-                    size=gt_masks.shape[2:],
-                    mode="bilinear",
-                    align_corners=False,
-                ).squeeze(1).byte()
-            iou = mask_iou(gt_masks.flatten(1), pred_masks.flatten(1).float())
-            tp_m = self.match_predictions(preds["cls"], gt_cls, iou).cpu().numpy()
-        tp.update({"tp_m": tp_m})  # update tp with mask IoU
+        tp_m = np.zeros((preds["cls"].shape[0], self.niou), dtype=bool)
+        tp.update({"tp_m": tp_m})
         return tp
 
     def plot_predictions(self, batch: dict[str, Any], preds: list[dict[str, torch.Tensor]], ni: int) -> None:
